@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  BLOCKED
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  role         Role       @default(STUDENT)
+  status       UserStatus @default(PENDING)
+
+  telegramId   String?  @unique
+  login        String?  @unique
+  passwordHash String?
+  timeZone     String   @default("Europe/Moscow")
+
+  lessons      Lesson[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Lesson {
+  id          Int      @id @default(autoincrement())
+
+  studentId   Int
+  student     User     @relation(fields: [studentId], references: [id])
+
+  lessonStartTime  DateTime
+
+  durationMin Int      @default(60)
+
+  isPaid        Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+
+  @@index([studentId])
+  @@index([lessonStartTime])
+}
