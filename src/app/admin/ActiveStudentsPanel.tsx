@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -34,6 +34,7 @@ type StudentCalendarPanelProps = {
     teacherTimeZone: string;
     selectedStudentId: number | null;
     onSelectedStudentIdChange: (studentId: number | null) => void;
+    selectedUnpaidLesson: number | null;
 };
 
 function addMinutesToIsoString(startIso: string, minutes: number) {
@@ -54,7 +55,8 @@ export default function StudentCalendarPanel({
     students,
     teacherTimeZone,
     selectedStudentId,
-    onSelectedStudentIdChange
+    onSelectedStudentIdChange,
+    selectedUnpaidLesson
 }: StudentCalendarPanelProps) {
     const [selectedSlotStart, setSelectedSlotStart] = useState<string | null>(null);
     const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
@@ -74,6 +76,27 @@ export default function StudentCalendarPanel({
 
     const selectedStudent =
         students.find((student) => student.id === selectedStudentId) ?? null;
+
+    useEffect(() => {
+        if (!selectedStudent || selectedUnpaidLesson === null) {
+            return;
+        }
+        const lesson = selectedStudent.lessons.find(
+            (lesson) => lesson.id === selectedUnpaidLesson
+        );
+
+        if (!lesson) {
+            return;
+        };
+
+        setSelectedLessonId(lesson.id);
+        setSelectedLessonTitle(
+            selectedStudent.login ?? `student-${selectedStudent.id}`
+        );
+        setSelectedLessonStart(lesson.lessonStartTime);
+        setSelectedLessonIsPaid(lesson.isPaid);
+
+    }, [selectedStudent, selectedUnpaidLesson]);
 
     const events = !selectedStudent
         ? []

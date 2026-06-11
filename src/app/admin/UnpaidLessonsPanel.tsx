@@ -18,6 +18,7 @@ type UnpaidLessonsPanelProps = {
     students: StudentDto[];
     teacherTimeZone: string;
     onOpenStudent: (studentId: number) => void;
+    onSelectUnpaidLesson: (unpaidLessonId: number) => void;
 };
 
 function formatDateTime(iso: string, timeZone: string) {
@@ -26,12 +27,13 @@ function formatDateTime(iso: string, timeZone: string) {
         timeStyle: "short",
         timeZone,
     }).format(new Date(iso));
-}
+};
 
 export default function UnpaidLessonsPanel({
     students,
     teacherTimeZone,
     onOpenStudent,
+    onSelectUnpaidLesson,
 }: UnpaidLessonsPanelProps) {
     const now = new Date();
 
@@ -54,6 +56,7 @@ export default function UnpaidLessonsPanel({
                 new Date(b.lessonStartTime).getTime()
         );
 
+
     return (
         <section className="mt-6">
             <div className="flex items-end justify-between gap-4">
@@ -71,12 +74,11 @@ export default function UnpaidLessonsPanel({
                 </p>
             ) : (
                 <div className="mt-3 flex gap-3 overflow-x-auto pb-3">
-                    {/* TODO: Open the selected lesson directly, not just the student's calendar. */}
                     {unpaidLessons.map((lesson) => (
                         <button
                             key={lesson.lessonId}
                             type="button"
-                            onClick={() => onOpenStudent(lesson.studentId)}
+                            onClick={() => { onOpenStudent(lesson.studentId); onSelectUnpaidLesson(lesson.lessonId) }}
                             className="min-w-[260px] rounded-lg border bg-surface p-4 text-surface-foreground"
                         >
                             <div className="flex items-start justify-between gap-3">
