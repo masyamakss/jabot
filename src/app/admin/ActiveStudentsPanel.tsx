@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -10,10 +10,11 @@ import luxonPlugin from "@fullcalendar/luxon3";
 import ConfirmActionForm from "./ConfirmActionForm";
 import {
     blockStudent,
-    createLessonForStudent,
     deleteLessonForStudent,
     updateLessonPaidStatus,
 } from "./actions";
+
+import CreateLessonModal from "./CreateLessonModal";
 
 type LessonDto = {
     id: number;
@@ -34,7 +35,8 @@ type StudentCalendarPanelProps = {
     teacherTimeZone: string;
     selectedStudentId: number | null;
     onSelectedStudentIdChange: (studentId: number | null) => void;
-    selectedUnpaidLesson: number | null;
+    scpSelectedLessonId: number | null;
+    scpSetSelectedLessonId: (unpaidLessonId: number | null) => void;
 };
 
 function addMinutesToIsoString(startIso: string, minutes: number) {
@@ -56,13 +58,10 @@ export default function StudentCalendarPanel({
     teacherTimeZone,
     selectedStudentId,
     onSelectedStudentIdChange,
-    selectedUnpaidLesson
+    scpSetSelectedLessonId,
+    scpSelectedLessonId
 }: StudentCalendarPanelProps) {
     const [selectedSlotStart, setSelectedSlotStart] = useState<string | null>(null);
-    const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
-    const [selectedLessonTitle, setSelectedLessonTitle] = useState<string | null>(null);
-    const [selectedLessonStart, setSelectedLessonStart] = useState<string | null>(null);
-    const [selectedLessonIsPaid, setSelectedLessonIsPaid] = useState<boolean>(false);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [globalCalendarOpen, setGlobalCalendarOpen] = useState(false);
     const [selectedGlobalLesson, setSelectedGlobalLesson] = useState<{
@@ -74,29 +73,10 @@ export default function StudentCalendarPanel({
         isPaid: boolean;
     } | null>(null);
 
-    const selectedStudent =
-        students.find((student) => student.id === selectedStudentId) ?? null;
+    const selectedStudent = students.find((student) => student.id === selectedStudentId) ?? null;
 
-    useEffect(() => {
-        if (!selectedStudent || selectedUnpaidLesson === null) {
-            return;
-        }
-        const lesson = selectedStudent.lessons.find(
-            (lesson) => lesson.id === selectedUnpaidLesson
-        );
+    const selectedLesson = selectedStudent?.lessons.find((lesson) => lesson.id === scpSelectedLessonId);
 
-        if (!lesson) {
-            return;
-        };
-
-        setSelectedLessonId(lesson.id);
-        setSelectedLessonTitle(
-            selectedStudent.login ?? `student-${selectedStudent.id}`
-        );
-        setSelectedLessonStart(lesson.lessonStartTime);
-        setSelectedLessonIsPaid(lesson.isPaid);
-
-    }, [selectedStudent, selectedUnpaidLesson]);
 
     const events = !selectedStudent
         ? []
@@ -145,10 +125,7 @@ export default function StudentCalendarPanel({
     }
 
     function closeDeleteLessonModal() {
-        setSelectedLessonId(null);
-        setSelectedLessonTitle(null);
-        setSelectedLessonStart(null);
-        setSelectedLessonIsPaid(false);
+        scpSetSelectedLessonId(null);
         setConfirmDeleteOpen(false);
     }
 
@@ -233,61 +210,12 @@ export default function StudentCalendarPanel({
                         </div>
 
                         {selectedSlotStart && (
-                            <div className="fixed inset-0 z-20 flex items-center justify-center">
-                                <button
-                                    type="button"
-                                    aria-label="Закрыть подтверждение"
-                                    className="absolute inset-0 bg-black/30"
-                                    onClick={() => setSelectedSlotStart(null)}
-                                />
-
-                                <div className="relative z-10 w-[90%] max-w-md rounded-2xl p-5 bg-surface text-surface-foreground shadow-2xl">
-                                    <h4 className="text-base font-semibold">Создать урок</h4>
-
-                                    <p className="mt-3 text-sm">
-                                        Вы уверены, что хотите создать урок для{" "}
-                                        <span className="font-medium">
-                                            {selectedStudent.login ?? `id=${selectedStudent.id}`}
-                                        </span>
-                                        ?
-                                    </p>
-
-                                    <p className="mt-2 text-sm">
-                                        Начало:{" "}
-                                        <span className="font-medium">
-                                            {formatDateTime(selectedSlotStart, teacherTimeZone)}
-                                        </span>
-                                        {" "}Конец:{" "}
-                                        <span className="font-medium">
-                                            {formatDateTime(
-                                                addMinutesToIsoString(selectedSlotStart, 60),
-                                                teacherTimeZone
-                                            )}
-                                        </span>
-                                    </p>
-
-                                    <form action={createLessonForStudent} onSubmit={() => setSelectedSlotStart(null)} className="mt-4 flex flex-wrap gap-2">
-                                        <input type="hidden" name="userId" value={selectedStudent.id} />
-                                        <input type="hidden" name="lessonStartTime" value={selectedSlotStart} />
-                                        <input type="hidden" name="durationMin" value="60" />
-
-                                        <button
-                                            type="submit"
-                                            className="rounded-md border px-3 py-2 text-sm"
-                                        >
-                                            Создать урок
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedSlotStart(null)}
-                                            className="rounded-md border px-3 py-2 text-sm"
-                                        >
-                                            Отмена
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
+                            <CreateLessonModal
+                                selectedStudent={selectedStudent}
+                                selectedSlotStart={selectedSlotStart}
+                                teacherTimeZone={teacherTimeZone}
+                                formatDateTime={formatDateTime}
+                                onClose={() => setSelectedSlotStart(null)} />
                         )}
                         <div className="mt-4 rounded-lg border bg-white p-2 text-slate-900 opacity-100">
                             <FullCalendar
@@ -301,12 +229,7 @@ export default function StudentCalendarPanel({
                                     right: "dayGridMonth,timeGridWeek,timeGridDay",
                                 }}
                                 eventClick={(info) => {
-                                    setSelectedLessonId(Number(info.event.id));
-                                    setSelectedLessonTitle(info.event.title);
-                                    setSelectedLessonStart(
-                                        info.event.start ? info.event.start.toISOString() : null
-                                    );
-                                    setSelectedLessonIsPaid(Boolean(info.event.extendedProps.isPaid));
+                                    scpSetSelectedLessonId(Number(info.event.id));
                                 }}
                                 dateClick={(info) => {
                                     if (info.allDay) {
@@ -319,7 +242,7 @@ export default function StudentCalendarPanel({
                                 timeZone={teacherTimeZone}
                             />
                         </div>
-                        {selectedLessonId && (
+                        {selectedLesson && (
                             <div className="fixed inset-0 z-30 flex items-center justify-center">
                                 <button
                                     type="button"
@@ -334,30 +257,27 @@ export default function StudentCalendarPanel({
                                     <p className="mt-3 text-sm">
                                         Вы уверены, что хотите удалить урок{" "}
                                         <span className="font-medium">
-                                            {selectedLessonTitle ?? `id=${selectedLessonId}`}
+                                            {selectedStudent.login ?? `id=${selectedLesson.id}`}
                                         </span>
                                         ?
                                     </p>
 
-                                    {selectedLessonStart && (
-                                        <p className="mt-2 text-sm">
-                                            Начало:{" "}
-                                            <span className="font-medium">
-                                                {formatDateTime(selectedLessonStart, teacherTimeZone)}
-                                            </span>
-                                        </p>
-                                    )}
+                                    <p className="mt-2 text-sm">
+                                        Начало:{" "}
+                                        <span className="font-medium">
+                                            {formatDateTime(selectedLesson.lessonStartTime, teacherTimeZone)}
+                                        </span>
+                                    </p>
 
                                     <form action={updateLessonPaidStatus} className="mt-4">
-                                        <input type="hidden" name="lessonId" value={selectedLessonId} />
+                                        <input type="hidden" name="lessonId" value={selectedLesson.id} />
 
                                         <label className="flex items-center gap-2 text-sm">
                                             <input
                                                 type="checkbox"
                                                 name="isPaid"
-                                                defaultChecked={selectedLessonIsPaid}
+                                                defaultChecked={selectedLesson.isPaid}
                                                 onChange={(e) => {
-                                                    setSelectedLessonIsPaid(e.currentTarget.checked);
                                                     e.currentTarget.form?.requestSubmit();
                                                 }}
                                             />
@@ -385,7 +305,7 @@ export default function StudentCalendarPanel({
                                 </div>
                             </div>
                         )}
-                        {confirmDeleteOpen && selectedLessonId && (
+                        {confirmDeleteOpen && selectedLesson && (
                             <div className="fixed inset-0 z-40 flex items-center justify-center">
                                 <button
                                     type="button"
@@ -400,16 +320,16 @@ export default function StudentCalendarPanel({
                                     <p className="mt-3 text-sm">
                                         Вы уверены, что хотите удалить урок{" "}
                                         <span className="font-medium">
-                                            {selectedLessonTitle ?? `id=${selectedLessonId}`}
+                                            {selectedStudent.login ?? `id=${selectedLesson.id}`}
                                         </span>
                                         ?
                                     </p>
 
-                                    {selectedLessonStart && (
+                                    {selectedLesson.lessonStartTime && (
                                         <p className="mt-2 text-sm">
                                             Начало:{" "}
                                             <span className="font-medium">
-                                                {formatDateTime(selectedLessonStart, teacherTimeZone)}
+                                                {formatDateTime(selectedLesson.lessonStartTime, teacherTimeZone)}
                                             </span>
                                         </p>
                                     )}
@@ -422,7 +342,7 @@ export default function StudentCalendarPanel({
                                         }}
                                         className="mt-4 flex flex-wrap gap-2"
                                     >
-                                        <input type="hidden" name="lessonId" value={selectedLessonId} />
+                                        <input type="hidden" name="lessonId" value={selectedLesson.id} />
 
                                         <button
                                             type="submit"

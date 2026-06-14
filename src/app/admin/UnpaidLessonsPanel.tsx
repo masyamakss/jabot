@@ -18,7 +18,7 @@ type UnpaidLessonsPanelProps = {
     students: StudentDto[];
     teacherTimeZone: string;
     onOpenStudent: (studentId: number) => void;
-    onSelectUnpaidLesson: (unpaidLessonId: number) => void;
+    ulpSetSelectedLessonId: (selectedLessonId: number | null) => void;
 };
 
 function formatDateTime(iso: string, timeZone: string) {
@@ -33,7 +33,7 @@ export default function UnpaidLessonsPanel({
     students,
     teacherTimeZone,
     onOpenStudent,
-    onSelectUnpaidLesson,
+    ulpSetSelectedLessonId,
 }: UnpaidLessonsPanelProps) {
     const now = new Date();
 
@@ -78,7 +78,7 @@ export default function UnpaidLessonsPanel({
                         <button
                             key={lesson.lessonId}
                             type="button"
-                            onClick={() => { onOpenStudent(lesson.studentId); onSelectUnpaidLesson(lesson.lessonId) }}
+                            onClick={() => { onOpenStudent(lesson.studentId); ulpSetSelectedLessonId(lesson.lessonId) }}
                             className="min-w-[260px] rounded-lg border bg-surface p-4 text-surface-foreground"
                         >
                             <div className="flex items-start justify-between gap-3">

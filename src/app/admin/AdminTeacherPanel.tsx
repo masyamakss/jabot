@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import StudentCalendarPanel from "./ActiveStudentsPanel";
 import UnpaidLessonsPanel from "./UnpaidLessonsPanel";
@@ -29,7 +29,7 @@ export default function AdminTeacherPanel({
     teacherTimeZone,
 }: AdminTeacherPanelProps) {
     const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
-    const [selectedUnpaidLesson, setselectedUnpaidLesson] = useState<number | null>(null);
+    const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
 
     return (
         <>
@@ -37,7 +37,7 @@ export default function AdminTeacherPanel({
                 students={students}
                 teacherTimeZone={teacherTimeZone}
                 onOpenStudent={setSelectedStudentId}
-                onSelectUnpaidLesson={setselectedUnpaidLesson}
+                ulpSetSelectedLessonId={setSelectedLessonId}
             />
 
             <StudentCalendarPanel
@@ -45,8 +45,9 @@ export default function AdminTeacherPanel({
                 teacherTimeZone={teacherTimeZone}
                 selectedStudentId={selectedStudentId}
                 onSelectedStudentIdChange={setSelectedStudentId}
-                selectedUnpaidLesson={selectedUnpaidLesson}
+                scpSetSelectedLessonId={setSelectedLessonId}
+                scpSelectedLessonId={selectedLessonId}
             />
         </>
     );
-}
+}   
