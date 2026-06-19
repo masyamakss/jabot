@@ -16,6 +16,8 @@ import {
 
 import CreateLessonModal from "./CreateLessonModal";
 
+import SelectedLessonRedactor from "./SelectedLessonRedactor";
+
 type LessonDto = {
     id: number;
     lessonStartTime: string;
@@ -63,6 +65,7 @@ export default function StudentCalendarPanel({
 }: StudentCalendarPanelProps) {
     const [selectedSlotStart, setSelectedSlotStart] = useState<string | null>(null);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const [lessonRedactorOpen, setlessonRedactorOpen] = useState(false);
     const [globalCalendarOpen, setGlobalCalendarOpen] = useState(false);
     const [selectedGlobalLesson, setSelectedGlobalLesson] = useState<{
         studentId: number;
@@ -271,7 +274,7 @@ export default function StudentCalendarPanel({
 
                                     <form action={updateLessonPaidStatus} className="mt-4">
                                         <input type="hidden" name="lessonId" value={selectedLesson.id} />
-
+                            
                                         <label className="flex items-center gap-2 text-sm">
                                             <input
                                                 type="checkbox"
@@ -296,6 +299,14 @@ export default function StudentCalendarPanel({
 
                                         <button
                                             type="button"
+                                            onClick={() => setlessonRedactorOpen(true)}
+                                            className="rounded-md border px-3 py-2 text-sm"
+                                        >
+                                            Редактировать
+                                        </button>
+
+                                        <button
+                                            type="button"
                                             onClick={closeDeleteLessonModal}
                                             className="rounded-md border px-3 py-2 text-sm"
                                         >
@@ -304,6 +315,17 @@ export default function StudentCalendarPanel({
                                     </div>
                                 </div>
                             </div>
+                        )}
+                        {selectedLesson && lessonRedactorOpen && (
+                            <SelectedLessonRedactor
+                                selectedStudent={selectedStudent}
+                                selectedLessonId={selectedLesson.id}
+                                teacherTimeZone={teacherTimeZone}
+                                formatDateTime={formatDateTime}
+                                addMinutesToIsoString={addMinutesToIsoString}
+                                onClose={() => setlessonRedactorOpen(false)}
+                                selectedSlotStart={selectedLesson.lessonStartTime}
+                                isPaid={selectedLesson.isPaid} />
                         )}
                         {confirmDeleteOpen && selectedLesson && (
                             <div className="fixed inset-0 z-40 flex items-center justify-center">
