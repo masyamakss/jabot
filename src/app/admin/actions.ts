@@ -231,6 +231,84 @@ export async function updateLessonPaidStatus(formData: FormData) {
     revalidatePath("/student");
 }
 
+export async function updateLessonInfo(formData: FormData) {
+    const lessonId = getLessonIdFromFormData(formData);
+
+    const lesson = await prisma.lesson.findUnique({
+        where: { id: lessonId },
+        select: {
+            id: true,
+            student: {
+                select: {
+                    role: true,
+                    status: true,
+                },
+            },
+        },
+    });
+
+    if (!lesson) {
+        throw new Error("Урок не найден");
+    }
+
+    if (lesson.student.role !== Role.STUDENT) {
+        throw new Error("Нельзя менять оплату урока не-ученика");
+    }
+
+    if (lesson.student.status !== UserStatus.ACTIVE) {
+        throw new Error("Можно менять оплату только у урока активного ученика");
+    }
+
+    const isPaidValue = formData.get("isPaid");
+
+    if (isPaidValue !== "true" && isPaidValue !== "false") {
+        throw new Error("Некорректное значение isPaid");
+    }
+
+    const isPaid = isPaidValue === "true";
+    if (isPaid !== null)
+    {
+        await prisma.lesson.update({
+        where: { id: lessonId },
+        data: { isPaid },
+    });
+    }
+
+    const lessonStartTime = formData.get("lessonStartTime");
+    
+
+    if (typeof lessonStartTime !== "string" || lessonStartTime.length === 0) {
+        throw new Error("Не передано время начала урока");
+    }
+    
+    let isNeedToSetTime = true;
+    const lessonStartTimeDate = new Date(lessonStartTime);
+    if (Number.isNaN(lessonStartTimeDate.getTime())) {
+        isNeedToSetTime = false;
+    }
+
+    if (isNeedToSetTime){
+        await prisma.lesson.update({
+            where: { id: lessonId },
+            data: { lessonStartTime: lessonStartTimeDate },
+        });
+    }
+
+    const durationMin = formData.get("durationMin");
+
+    if (durationMin !== null && Number.isInteger(durationMin))
+    {
+        await prisma.lesson.update({
+            where: { id: lessonId },
+            data: { durationMin: Number(durationMin) },
+        });
+    }
+
+    revalidatePath("/admin");
+    revalidatePath("/student");
+}
+
+
 export async function updateTeacherTimeZone(formData: FormData) {
     const teacherIdValue = formData.get("teacherId");
     const timeZoneValue = formData.get("timeZone");
